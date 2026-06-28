@@ -188,8 +188,8 @@ def get_products():
 
     if 'category' in request.args:
         category = request.args.get('category').lower()
-        base_query += ' AND LOWER(p.name) LIKE ?'
-        params.append(f'%{category}%')
+        base_query += ' AND LOWER(p.category) = ?'
+        params.append(category)
         
     sort_by = request.args.get('sort', 'default')
     if sort_by == 'price_asc':

@@ -73,6 +73,7 @@ def create_schema(conn):
             price REAL,
             stock INTEGER,
             image_url TEXT,
+            category TEXT DEFAULT 'electronics',
             FOREIGN KEY(store_id) REFERENCES stores(id)
         )
     ''')
