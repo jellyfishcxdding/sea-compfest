@@ -3,121 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Seller Management - SEAPEDIA</title>
+    <title>Seller Dashboard - SEAPEDIA</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/sellerPage.css">
 </head>
-<body>
-    <nav class="navbar">
-        <div class="container nav-container">
-            <a href="index.html" class="navbar-brand">SEAPEDIA Seller Center</a>
-            <div class="nav-actions" id="nav-links" style="margin-left: auto;">
-                <button class="btn btn-outline" data-href="dashboard.html">Back to Dashboard</button>
+<body style="background: var(--background-light);">
+    <nav class="navbar" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 100;">
+        <div class="container nav-container flex justify-between align-center">
+            <a href="index.html" class="navbar-brand">
+                <span style="color: #1976d2;">SELLER</span>-POV
+            </a>
+            <div class="flex gap-3 align-center">
+                <span id="seller-name" style="font-weight: 600;">Welcome, Seller</span>
+                <button class="btn btn-outline" onclick="logout()" style="border-color: #d32f2f; color: #d32f2f;">Logout</button>
             </div>
         </div>
     </nav>
 
-    <main class="container" style="margin-top: 24px; margin-bottom: 40px;">
-        <div class="flex justify-between align-center mb-4">
-            <h1 class="section-title" style="margin: 0; font-size: 24px;">Store Management</h1>
+    <div class="container mt-4" style="display: grid; grid-template-columns: 250px 1fr; gap: 24px; min-height: 80vh;">
+        <!-- Sidebar -->
+        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: var(--box-shadow); height: fit-content; position: sticky; top: 100px;">
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
+                <li><a href="#" class="btn" style="display:block; text-align:left; background: #e3f2fd; color: #1976d2; font-weight:600;">Store Orders</a></li>
+                <li><a href="#" class="btn btn-outline" style="display:block; text-align:left; border:none; color:var(--text-muted);">My Products</a></li>
+                <li><a href="#" class="btn btn-outline" style="display:block; text-align:left; border:none; color:var(--text-muted);">Store Settings</a></li>
+            </ul>
         </div>
 
-        <!-- Store Setup / Info -->
-        <div class="card mb-4">
-            <h3 class="mb-3">Store Profile</h3>
-            <div id="store-info-container">
-                <form id="store-form" class="flex gap-2">
-                    <input type="text" id="store-name" class="form-control" placeholder="Enter unique store name..." required style="max-width: 400px;">
-                    <button type="submit" class="btn btn-primary">Create Store</button>
-                </form>
+        <!-- Main Content -->
+        <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: var(--box-shadow);">
+            <div class="flex justify-between align-center mb-4">
+                <h2>Manage Incoming Orders</h2>
+                <button class="btn btn-outline" onclick="loadSellerOrders()">Refresh</button>
             </div>
-        </div>
 
-        <!-- Products -->
-        <div class="card mb-4" id="seller-products-section" style="display: none;">
-            <div class="flex justify-between align-center mb-3">
-                <h3>My Products</h3>
-                <button class="btn btn-primary" onclick="openModal('addProductModal')">+ Add Product</button>
+            <div id="seller-orders-list" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Orders injected here -->
+                <p class="text-muted text-center" style="padding: 40px;">No incoming orders.</p>
             </div>
-            <div class="product-grid" id="my-products-list">
-                <p class="text-muted" style="grid-column: 1/-1;">No products found in your store.</p>
-            </div>
-        </div>
-
-        <!-- Pesanan Masuk Content -->
-        <div id="pesanan-masuk" class="tab-content" style="display:block;">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
-                    <h3>Daftar Pesanan</h3>
-                    <input type="text" class="form-control" placeholder="Cari pesanan..." style="width: 250px;">
-                </div>
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Produk</th>
-                            <th>Total Pembayaran</th>
-                            <th>Status</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="seller-orders-tbody">
-                        <!-- Injected dynamically by app.js or inline script -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-
-    <!-- Add Product Modal -->
-    <div class="modal-overlay" id="addProductModal">
-        <div class="modal-content">
-            <button onclick="closeModal('addProductModal')" style="position:absolute; right:16px; top:16px; background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
-            <h2 class="mb-3">Add New Product</h2>
-            <form id="add-product-form">
-                <div class="form-group">
-                    <label>Product Name</label>
-                    <input type="text" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label>Description</label>
-                    <textarea class="form-control" rows="3" required></textarea>
-                </div>
-                <div class="flex gap-2">
-                    <div class="form-group" style="flex:1;">
-                        <label>Price (Rp)</label>
-                        <input type="number" class="form-control" required>
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Stock</label>
-                        <input type="number" class="form-control" required>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">Save Product</button>
-            </form>
         </div>
     </div>
 
+    <div id="toast-container"></div>
     <script src="js/style.js"></script>
     <script src="js/sellerPage.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const role = localStorage.getItem('seapedia_active_role');
-            if (role !== 'Seller') {
-                alert('Unauthorized! Only Sellers can access this page.');
-                window.location.href = 'index.html';
-                return;
-            }
-            // For UI mock purposes right now:
-            document.getElementById('store-form').onsubmit = (e) => {
-                e.preventDefault();
-                alert('Store created successfully (Mock)!');
-                document.getElementById('seller-products-section').style.display = 'block';
-                document.getElementById('seller-orders-section').style.display = 'block';
-            };
-        };
-    </script>
 </body>
 </html>
-
-
