@@ -2,6 +2,14 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     setupNav();
+    const urlParams = new URLSearchParams(window.location.search);
+    const sort = urlParams.get('sort');
+    if (sort) {
+        const sortDropdown = document.getElementById('sort-dropdown');
+        if (sortDropdown) {
+            sortDropdown.value = sort;
+        }
+    }
     loadSearchResults();
 });
 
