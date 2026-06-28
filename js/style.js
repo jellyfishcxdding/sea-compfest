@@ -73,7 +73,7 @@ async function loadProducts(limit = 12) {
         
         products.forEach(p => {
             list.innerHTML += `
-            <div class="product-card slide-fwd-hover" data-product-id="${p.id}">
+            <div class="product-card slide-fwd-hover" data-product-id="${p.id}" onclick="window.location.href='product.html?id=${p.id}'" style="cursor: pointer;">
                 <div class="product-image" style="background-image: url('${p.image_url}');"></div>
                 <div class="product-info">
                     <h3 class="product-title">${p.name}</h3>

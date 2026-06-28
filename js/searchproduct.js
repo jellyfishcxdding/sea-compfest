@@ -1,7 +1,6 @@
 // JS for searchproduct.html
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupNav();
     const urlParams = new URLSearchParams(window.location.search);
     const sort = urlParams.get('sort');
     if (sort) {
@@ -13,32 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSearchResults();
 });
 
-function setupNav() {
-    const user = JSON.parse(localStorage.getItem('seapedia_user'));
-    const navLinks = document.getElementById('nav-links');
-    
-    if (user) {
-        navLinks.innerHTML = `
-            <div class="cart-icon" onclick="window.location.href='cart.html'">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-            </div>
-            <button class="btn btn-outline" onclick="window.location.href='dashboard.html'">Dashboard</button>
-            <button class="btn btn-primary" onclick="logout()">Logout</button>
-        `;
-    } else {
-        navLinks.innerHTML = `
-            <button class="btn btn-outline" onclick="window.location.href='login.html'">Login</button>
-            <button class="btn btn-primary" onclick="window.location.href='login.html'">Sign Up</button>
-        `;
-    }
-}
 
-function logout() {
-    localStorage.removeItem('seapedia_user');
-    localStorage.removeItem('seapedia_token');
-    localStorage.removeItem('seapedia_active_role');
-    window.location.href = 'index.html';
-}
 
 function handleSearch(event) {
     event.preventDefault();

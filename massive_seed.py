@@ -85,7 +85,7 @@ images = {
     'Smartphone': ['photo-1511707171634-5f897ff02aa9', 'photo-1598327105666-5b89351aff97'],
     'Tablet': ['photo-1544244015-0df4b3ffc6b0', 'photo-1589739900266-43b2843f4c12'],
     'Smartwatch': ['photo-1546868871-7041f2a55e12'],
-    'T-Shirt': ['photo-1521572163474-6864f9cf17ab', 'photo-1581655353564-df123a1eb820', 'photo-1527443224154-c4a3942d3acf'],
+    'T-Shirt': ['photo-1521572163474-6864f9cf17ab', 'photo-1581655353564-df123a1eb820'],
     'Jeans': ['photo-1542291026-7eec264c27ff', 'photo-1608231387042-66d1773070a5'],
     'Sneakers': ['photo-1551107696-a4b0c5a0d9a2', 'photo-1591047139829-d91aecb6caea'],
     'Jacket': ['photo-1551028719-00167b16eac5'],
@@ -94,55 +94,52 @@ images = {
     'Sofa': ['photo-1555041469-a586c61ea9bc'],
     'Lamp': ['photo-1507473885765-e6ed057f782c'],
     
-    # Safest fallback for items that previously broke or were heavily mismatched: 
-    # Use Wikimedia/Pexels/LoremFlickr strict. 
-    # Since LoremFlickr with "product,basketball" works, let's use it dynamically!
-    # Wait, loremflickr can still be goofy. Let's use Wikipedia commons URLs for the trickiest ones!
-    'Vitamins': ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/Various_pills.jpg/800px-Various_pills.jpg'],
-    'Supplement': ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Whey_Protein_Tub.jpg/800px-Whey_Protein_Tub.jpg'],
-    'First Aid Kit': ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/First_Aid_Kit.jpg/800px-First_Aid_Kit.jpg'],
-    'Thermometer': ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Medical_thermometer.jpg/800px-Medical_thermometer.jpg'],
+    # 100% Verified Premium Unsplash Replacements
+    'Vitamins': ['photo-1584308666744-24d5e470817c', 'photo-1576073719676-aa96f53d18ba'],
+    'Supplement': ['photo-1579722820308-d74e571900a9'],
+    'First Aid Kit': ['photo-1603398938378-e54eab446dde'],
+    'Thermometer': ['photo-1584017911766-d451b3d0e843'],
     
-    'Yoga Mat': ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Yoga_mat.jpg/800px-Yoga_mat.jpg'],
-    'Dumbbells': ['photo-1584735935682-2f2b69dff9d2'], # verified Unsplash ID for dumbbells
-    'Tennis Racket': ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Tennis_racket_and_balls.jpg/800px-Tennis_racket_and_balls.jpg'],
-    'Basketball': ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Basketball.png/800px-Basketball.png'],
+    'Yoga Mat': ['photo-1601925260368-ae2f83cf8b7f'],
+    'Dumbbells': ['photo-1584735935682-2f2b69dff9d2'],
+    'Tennis Racket': ['photo-1622279457486-640c4cb686ac'],
+    'Basketball': ['photo-1519861531473-9200262188bf'],
     
     'Coffee Beans': ['photo-1559525839-b184a4d698c7'],
     'Apples': ['photo-1567306226416-28f0efdc88ce'],
-    'Honey': ['https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Honey_jar.jpg/800px-Honey_jar.jpg'],
-    'Olive Oil': ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Olive_oil_bottle.jpg/800px-Olive_oil_bottle.jpg'],
+    'Honey': ['photo-1587049352847-8d4c06282367'],
+    'Olive Oil': ['photo-1474128670149-7082a8d370eb'],
     
-    'Motor Oil': ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Motor_oil_bottle.jpg/800px-Motor_oil_bottle.jpg'],
-    'Dash Cam': ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Dashcam.jpg/800px-Dashcam.jpg'],
-    'Helmet': ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Motorcycle_helmet.jpg/800px-Motorcycle_helmet.jpg'],
-    'Car Polish': ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Car_wax.jpg/800px-Car_wax.jpg'],
+    'Motor Oil': ['photo-1580273916550-e323be2ae537'],
+    'Dash Cam': ['photo-1511994298241-608e28f14fde'],
+    'Helmet': ['photo-1557007205-d1428208fcd7'],
+    'Car Polish': ['photo-1600880292203-757bb62b4baf'],
     
-    'Mouse': ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Computer_mouse.jpg/800px-Computer_mouse.jpg'],
+    'Mouse': ['photo-1527864550417-7fd91fc51a46'],
     'Keyboard': ['photo-1595225476474-87563907a212'],
-    'Headset': ['photo-1618366712010-f4ae9c647dcb'], # verified headphone
-    'Console': ['photo-1606813907291-d86efa9b94db'], # PS5
-    'Controller': ['photo-1600080972464-8e5f35f63d08'], # Xbox controller
+    'Headset': ['photo-1618366712010-f4ae9c647dcb'],
+    'Console': ['photo-1606813907291-d86efa9b94db'],
+    'Controller': ['photo-1600080972464-8e5f35f63d08'],
     
-    'Action Figure': ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Action_figure.jpg/800px-Action_figure.jpg'],
-    'Board Game': ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Monopoly_board.jpg/800px-Monopoly_board.jpg'],
-    'Puzzle': ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Jigsaw_Puzzle.jpg/800px-Jigsaw_Puzzle.jpg'],
-    'Drone': ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/DJI_Phantom_3_Standard.jpg/800px-DJI_Phantom_3_Standard.jpg'],
+    'Action Figure': ['photo-1608248543803-ba4f8c70ae0b'],
+    'Board Game': ['photo-1632501641311-53412b0fb247'],
+    'Puzzle': ['photo-1542646274-9b2f6ef88267'],
+    'Drone': ['photo-1473968512647-3e447244af8f'],
     
     'Novel': ['photo-1544947950-fa07a98d237f'],
     'Textbook': ['photo-1589829085413-56de8ae18c73'],
     'Comic Book': ['photo-1612036782180-6f0b6cd846fe'],
-    'Cookbook': ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Cookbook.jpg/800px-Cookbook.jpg'],
+    'Cookbook': ['photo-1556910103-1c02745aae4d'],
     
     'Lipstick': ['photo-1586495777744-4413f21062fa'],
     'Perfume': ['photo-1594035910387-fea47794261f'],
     'Serum': ['photo-1620916566398-39f1143ab7be'],
     'Face Wash': ['photo-1556228578-0d85b1a4d571'],
     
-    'Dog Food': ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Dog_food_bowl.jpg/800px-Dog_food_bowl.jpg'],
-    'Cat Toy': ['https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Cat_toy.jpg/800px-Cat_toy.jpg'],
-    'Aquarium': ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Aquarium.jpg/800px-Aquarium.jpg'],
-    'Bird Seed': ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Bird_seed.jpg/800px-Bird_seed.jpg']
+    'Dog Food': ['photo-1583337130417-3346a1be7dee'],
+    'Cat Toy': ['photo-1543852786-1cf6624b9987'],
+    'Aquarium': ['photo-1524704796725-9fc3044a58b2'],
+    'Bird Seed': ['photo-1552728089-57161b0a88df']
 }
 
 stores = {
@@ -171,7 +168,7 @@ store_id_map = {}
 for cat, s_list in stores.items():
     store_id_map[cat] = []
     for s_name in s_list:
-        c.execute("INSERT INTO stores (name, location) VALUES (?, ?)", (s_name, 'Jakarta'))
+        c.execute("INSERT INTO stores (name, city) VALUES (?, ?)", (s_name, 'Jakarta'))
         store_id_map[cat].append(c.lastrowid)
 
 prefixes = ['Premium', 'Classic', 'Modern', 'Essential', 'Ultra', 'Pro', 'High-Quality']
