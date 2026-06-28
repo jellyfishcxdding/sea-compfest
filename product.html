@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details - SEAPEDIA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/product.css">
+    <style>
+        .product-detail-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+        }
+        .product-main-image {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        @media (max-width: 768px) {
+            .product-detail-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="navbar-brand">SEAPEDIA</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search...">
+                <button><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+            </div>
+            <div class="nav-actions" id="nav-links" style="margin-left: auto;">
+                <button class="btn btn-outline" data-href="index.html">Back to Home</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="margin-top: 40px; margin-bottom: 40px;">
+        <div class="product-detail-container">
+            <div id="product-img" class="product-main-image" style="background-color: var(--background-light);"></div>
+            <div>
+                <h1 id="product-title" style="font-size: 32px; margin-bottom: 8px;">Loading...</h1>
+                <p id="product-price" style="font-size: 24px; color: var(--primary-color); font-weight: 700; margin-bottom: 16px;"></p>
+                
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 24px;">
+                    <span class="badge" style="background:#e8f5e9; color:var(--primary-color);">In Stock: <span id="product-stock">0</span></span>
+    <link rel="stylesheet" href="css/product.css">
+    <style>
+        .product-detail-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+        }
+        .product-main-image {
+            width: 100%;
+            height: 400px;
+            border-radius: 8px;
+            background-size: cover;
+            background-position: center;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+        @media (max-width: 768px) {
+            .product-detail-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="navbar-brand">SEAPEDIA</a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search...">
+                <button><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+            </div>
+            <div class="nav-actions" id="nav-links" style="margin-left: auto;">
+                <button class="btn btn-outline" data-href="index.html">Back to Home</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="margin-top: 40px; margin-bottom: 40px;">
+        <div class="product-detail-container">
+            <div id="product-img" class="product-main-image" style="background-color: var(--background-light);"></div>
+            <div>
+                <h1 id="product-title" style="font-size: 32px; margin-bottom: 8px;">Loading...</h1>
+                <p id="product-price" style="font-size: 24px; color: var(--primary-color); font-weight: 700; margin-bottom: 16px;"></p>
+                
+                <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 24px;">
+                    <span class="badge" style="background:#e8f5e9; color:var(--primary-color);">In Stock: <span id="product-stock">0</span></span>
+                    <a id="product-store-link" href="#" style="color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path></svg>
+                        <span id="product-store-name">Store</span>
+                    </a>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); padding: 24px 0; margin-bottom: 24px;">
+                    <h3 style="font-size: 16px; margin-bottom: 8px;">Product Description</h3>
+                    <p id="product-desc" class="text-muted" style="line-height: 1.6;"></p>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="font-size: 14px; font-weight: 600; display: block; margin-bottom: 8px;">Quantity</label>
+                    <div class="qty-controls" style="justify-content: flex-start; display: inline-flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                        <button class="qty-btn" style="border:none; border-radius:0; width: 40px; height: 40px; background:var(--background-light);" onclick="updateProductPageQty(-1)">-</button>
+                        <span id="product-page-qty" style="width: 48px; text-align: center; font-weight: 600; line-height: 40px;">1</span>
+                        <button class="qty-btn" style="border:none; border-radius:0; width: 40px; height: 40px; background:var(--background-light);" onclick="updateProductPageQty(1)">+</button>
+                    </div>
+                </div>
+
+                <div class="action-buttons" style="margin-top: 0;">
+                    <button class="btn btn-outline" style="flex: 1; padding: 14px;" onclick="addToCart()">+ Add to Cart</button>
+                    <button class="btn btn-primary" style="flex: 1; padding: 14px;" onclick="buyNow()">Buy Now (Checkout)</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/style.js"></script>
+    <script src="js/product.js"></script>
+</body>
+</html>

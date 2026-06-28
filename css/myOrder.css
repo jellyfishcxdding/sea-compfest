@@ -1,0 +1,37 @@
+/* My Orders specific styles */
+.order-card {
+    background: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+.order-header {
+    padding: 16px 24px;
+    background: var(--background-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+.order-status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.status-pending { background: #fff3e0; color: #f57c00; }
+.status-shipping { background: #e3f2fd; color: #1976d2; }
+.status-completed { background: #e8f5e9; color: #388e3c; }
+.order-items {
+    padding: 24px;
+}
+.order-total {
+    padding: 16px 24px;
+    background: #fafafa;
+    text-align: right;
+    font-weight: 800;
+    font-size: 18px;
+    border-top: 1px solid var(--border-color);
+}\n

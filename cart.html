@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - SEAPEDIA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/cart.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <a href="index.html" class="navbar-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                SEAPEDIA
+            </a>
+            <div class="search-bar">
+                <input type="text" placeholder="Search products...">
+                <button><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg></button>
+            </div>
+            <div class="nav-actions" id="nav-links">
+                <button class="btn btn-outline" data-href="index.html">Back to Home</button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container" style="margin-top: 40px; margin-bottom: 40px;">
+        <h1 class="section-title mb-4">My Shopping Cart</h1>
+        
+        <div class="cart-container">
+            <!-- Cart Items List -->
+            <div id="cart-items-container">
+                <!-- Injected dynamically by cart.js -->
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <h3 style="margin-bottom: 16px;">Order Summary</h3>
+                <div class="flex justify-between mb-2">
+                    <span class="text-muted" id="summary-items-text">Total Price (0 items)</span>
+                    <span id="summary-price-text">Rp 0</span>
+                </div>
+                <hr style="border:none; border-top:1px dashed var(--border-color); margin: 16px 0;">
+                <div class="flex justify-between mb-4">
+                    <span style="font-weight:800;">Grand Total</span>
+                    <span style="font-weight:800; font-size:18px; color:var(--primary-color);" id="grand-total-text">Rp 0</span>
+                </div>
+                
+                <button class="btn btn-primary" style="width: 100%; font-size: 16px;" id="checkout-btn" data-href="checkout.html">Proceed to Checkout</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/style.js"></script>
+    <script src="js/cart.js"></script>
+</body>
+</html>

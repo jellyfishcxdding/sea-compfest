@@ -1,0 +1,25 @@
+/* Homepage Specific Styles */
+.hero-section {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+.category-bubble {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--background-white);
+    box-shadow: var(--box-shadow);
+    min-width: 100px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+.category-bubble:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--box-shadow-hover);
+    color: var(--primary-color);
+}
+.category-bubble svg { color: var(--primary-color); margin-bottom: 8px; }\n

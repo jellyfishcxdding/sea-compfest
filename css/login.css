@@ -1,0 +1,44 @@
+/* Login & Auth Pages */
+.auth-container {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f5f7f9 100%);
+    padding: 20px;
+}
+.auth-card {
+    background: var(--background-white);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 450px;
+}
+.auth-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.auth-header h1 { font-size: 28px; font-weight: 800; color: var(--primary-color); margin-bottom: 8px;}
+.auth-header p { color: var(--text-muted); }
+.role-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.role-btn {
+    padding: 12px;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 600;
+}
+.role-btn input { display: none; }
+.role-btn:has(input:checked) {
+    border-color: var(--primary-color);
+    background: var(--secondary-color);
+    color: var(--primary-color);
+}\n

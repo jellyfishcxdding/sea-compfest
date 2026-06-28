@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SEAPEDIA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/login.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--background-light);
+            padding: 20px;
+        }
+        .auth-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--box-shadow);
+            width: 100%;
+            max-width: 400px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            margin-bottom: -2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <h1 class="text-center" style="color:var(--primary-color); margin-bottom: 24px;">SEAPEDIA</h1>
+            
+            <div class="tabs">
+                <div class="tab active" id="tab-login">Login</div>
+                <div class="tab" id="tab-register">Register</div>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="login-username" class="form-control" required placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="form-control" required placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; height: 44px; margin-top: 16px;">Login</button>
+            </form>
+
+            <!-- Register Form (Hidden by default) -->
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" class="form-control" required placeholder="Choose a username">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" class="form-control" required placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label>I want to register as (Check all that apply):</label>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <label><input type="checkbox" name="roles" value="Buyer" checked> 🛒 Buyer (Shopping)</label>
+                        <label><input type="checkbox" name="roles" value="Seller"> 🏪 Seller (Open a store)</label>
+                        <label><input type="checkbox" name="roles" value="Driver"> 🛵 Driver (Deliver items)</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; height: 44px; margin-top: 16px;">Create Account</button>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="index.html" style="font-size: 14px; font-weight: 500;">&larr; Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Selection Modal (For users with multiple roles) -->
+    <div class="modal-overlay" id="roleModal">
+        <div class="modal-content" style="max-width: 400px; padding: 40px; text-align: center;">
+            <h2 class="mb-3">Welcome Back!</h2>
+            <p class="text-muted mb-4">Choose your active dashboard for this session.</p>
+            <div id="role-selection-container" style="display:flex; flex-direction:column; gap:12px;">
+                <!-- Roles injected here via app.js -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toasts (Custom) -->
+    <div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px;"></div>
+
+    <script src="js/style.js"></script>
+    <script src="js/login.js"></script>
+    <script>
+        document.getElementById('tab-login').addEventListener('click', () => switchTab('login'));
+        document.getElementById('tab-register').addEventListener('click', () => switchTab('register'));
+        
+        document.getElementById('login-form').addEventListener('submit', (e) => handleLogin(e));
+        document.getElementById('register-form').addEventListener('submit', (e) => handleRegister(e));
+
+        function switchTab(tab) {
+            document.getElementById('tab-login').classList.remove('active');
+            document.getElementById('tab-register').classList.remove('active');
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'none';
+
+            if (tab === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('login-form').style.display = 'block';
+            } else {
+                document.getElementById('tab-register').classList.add('active');
+                document.getElementById('register-form').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
