@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - SEAPEDIA</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body style="background: var(--background-light);">
+    <nav class="navbar" style="box-shadow: 0 4px 12px rgba(0,0,0,0.05); z-index: 100;">
+        <div class="container nav-container flex justify-between align-center">
+            <a href="index.html" class="navbar-brand">
+                <span style="color: #ff9800;">DRIVER</span>-POV
+            </a>
+            <div class="flex gap-3 align-center">
+                <span id="driver-name" style="font-weight: 600;">Welcome, Driver</span>
+                <button class="btn btn-outline" onclick="logout()" style="border-color: #d32f2f; color: #d32f2f;">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4" style="display: grid; grid-template-columns: 250px 1fr; gap: 24px; min-height: 80vh;">
+        <!-- Sidebar -->
+        <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: var(--box-shadow); height: fit-content; position: sticky; top: 100px;">
+            <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
+                <li><a href="#" class="btn" style="display:block; text-align:left; background: #fff8e1; color: #ffb300; font-weight:600;">Available Orders</a></li>
+                <li><a href="#" class="btn btn-outline" style="display:block; text-align:left; border:none; color:var(--text-muted);">My Deliveries</a></li>
+                <li><a href="#" class="btn btn-outline" style="display:block; text-align:left; border:none; color:var(--text-muted);">Earnings</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: var(--box-shadow);">
+            <div class="flex justify-between align-center mb-4">
+                <h2>Orders Ready for Pickup</h2>
+                <button class="btn btn-outline" onclick="loadDriverOrders()">Refresh</button>
+            </div>
+
+            <div id="driver-orders-list" style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Orders injected here -->
+                <p class="text-muted text-center" style="padding: 40px;">No available orders right now.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+    <script src="js/style.js"></script>
+    <script src="js/driverPage.js"></script>
+</body>
+</html>

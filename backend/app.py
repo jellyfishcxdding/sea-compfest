@@ -91,28 +91,41 @@ def login():
         }
     }), 200
 
+from functools import wraps
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].replace('Bearer ', '')
+        if not token:
+            return jsonify({'error': 'Token is missing!'}), 401
+        try:
+            current_user = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
+        except Exception:
+            return jsonify({'error': 'Token is invalid!'}), 401
+        return f(current_user, *args, **kwargs)
+    return decorated
+
 @app.route('/api/auth/select-role', methods=['POST'])
-def select_role():
+@token_required
+def select_role(current_user):
     data = request.json
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
     active_role = data.get('role')
 
-    try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=['HS256'])
-        if active_role not in payload['roles']:
-            return jsonify({'error': 'Unauthorized role selection'}), 403
-        
-        new_token = jwt.encode({
-            'user_id': payload['user_id'],
-            'username': payload['username'],
-            'roles': payload['roles'],
-            'active_role': active_role,
-            'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12)
-        }, app.config['SECRET_KEY'], algorithm='HS256')
+    if active_role not in current_user['roles']:
+        return jsonify({'error': 'Unauthorized role selection'}), 403
+    
+    new_token = jwt.encode({
+        'user_id': current_user['user_id'],
+        'username': current_user['username'],
+        'roles': current_user['roles'],
+        'active_role': active_role,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=12)
+    }, app.config['SECRET_KEY'], algorithm='HS256')
 
-        return jsonify({'token': new_token, 'active_role': active_role})
-    except Exception:
-        return jsonify({'error': 'Invalid token'}), 401
+    return jsonify({'token': new_token, 'active_role': active_role})
 
 @app.route('/api/stores', methods=['GET'])
 def get_stores():
@@ -210,7 +223,9 @@ def handle_reviews():
         return jsonify(reviews)
 
 @app.route('/api/wallet/<int:user_id>', methods=['GET'])
-def get_wallet(user_id):
+@token_required
+def get_wallet(current_user, user_id):
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT balance FROM wallets WHERE user_id = ?', (user_id,))
@@ -221,9 +236,11 @@ def get_wallet(user_id):
     return jsonify({'balance': 0})
 
 @app.route('/api/checkout', methods=['POST'])
-def checkout():
+@token_required
+def checkout(current_user):
     data = request.json
     user_id = data.get('user_id')
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized checkout'}), 403
     cart = data.get('cart', [])
     payment_method = data.get('payment_method')
     delivery_fee = data.get('delivery_fee', 10000)
@@ -289,7 +306,9 @@ def checkout():
         conn.close()
 
 @app.route('/api/orders/buyer/<int:user_id>', methods=['GET'])
-def get_buyer_orders(user_id):
+@token_required
+def get_buyer_orders(current_user, user_id):
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db()
     c = conn.cursor()
     c.execute('''

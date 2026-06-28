@@ -172,10 +172,11 @@ async function loadReviews() {
         list.innerHTML = '';
         reviews.forEach(r => {
             const safeComment = r.comment.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeName = r.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
             list.innerHTML += `
-                <div style="background:var(--background-light); padding:16px; border-radius:8px;">
+                <div style="background:var(--background-light); padding:16px; border-radius:8px;" class="scroll-animate">
                     <div class="flex justify-between">
-                        <strong style="font-size:14px;">${r.name}</strong>
+                        <strong style="font-size:14px;">${safeName}</strong>
                         <span style="color: #ffb300; font-size:14px;">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
                     </div>
                     <p class="mt-2 text-muted" style="font-size:14px;">${safeComment}</p>
