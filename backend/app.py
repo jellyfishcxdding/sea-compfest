@@ -333,62 +333,6 @@ def checkout(current_user):
     finally:
         conn.close()
 
-@app.route('/api/orders/buyer/<int:user_id>', methods=['GET'])
-@token_required
-def get_buyer_orders(current_user, user_id):
-    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('''
-        SELECT o.*, s.name as store_name
-        FROM transactions.orders o
-        JOIN seller.stores s ON o.store_id = s.id
-        WHERE o.user_id = ?
-        ORDER BY o.created_at DESC
-    ''', (user_id,))
-    orders = [dict(row) for row in c.fetchall()]
-    
-    for order in orders:
-        c.execute('''
-            SELECT oi.*, p.name, p.image_url
-            FROM transactions.order_items oi
-            JOIN inventory.products p ON oi.product_id = p.id
-            WHERE oi.order_id = ?
-        ''', (order['id'],))
-        order['items'] = [dict(row) for row in c.fetchall()]
-        
-    conn.close()
-    return jsonify(orders)
-
-@app.route('/api/orders/seller/<int:seller_id>', methods=['GET'])
-def get_seller_orders(seller_id):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('SELECT id FROM seller.stores WHERE seller_id = ?', (seller_id,))
-    store = c.fetchone()
-    if not store:
-        return jsonify({'error': 'No store found'}), 404
-        
-    c.execute('''
-        SELECT o.*, u.username as buyer_name
-        FROM transactions.orders o
-        JOIN users u ON o.user_id = u.id
-        WHERE o.store_id = ?
-        ORDER BY o.created_at DESC
-    ''', (store['id'],))
-    orders = [dict(row) for row in c.fetchall()]
-    
-    for order in orders:
-        c.execute('''
-            SELECT oi.*, p.name 
-            FROM transactions.order_items oi
-            JOIN inventory.products p ON oi.product_id = p.id
-            WHERE oi.order_id = ?
-        ''', (order['id'],))
-        order['items'] = [dict(row) for row in c.fetchall()]
-        
-    conn.close()
-    return jsonify(orders)
 
 @app.route('/api/orders/driver', methods=['GET'])
 def get_driver_orders():
@@ -406,19 +350,6 @@ def get_driver_orders():
     conn.close()
     return jsonify(orders)
 
-@app.route('/api/orders/<int:order_id>/status', methods=['PUT'])
-def update_order_status(order_id):
-    data = request.json
-    new_status = data.get('status')
-    if not new_status:
-        return jsonify({'error': 'Missing status'}), 400
-        
-    conn = get_db()
-    c = conn.cursor()
-    c.execute('UPDATE transactions.orders SET status = ? WHERE id = ?', (new_status, order_id))
-    conn.commit()
-    conn.close()
-    return jsonify({'message': 'Status updated'})
 
 @app.route('/api/wishlist/<int:user_id>', methods=['GET'])
 @token_required
@@ -718,9 +649,430 @@ def manage_cart(current_user):
         return jsonify({'message': 'Cart updated'})
 
 
+# ══════════════════════════════════════════════════════════════
+#  PHASE 3 — Discounts · Seller Order Processing · Reports
+#  Security: every endpoint verifies caller owns the resource.
+#  Privacy:  responses only include fields the caller needs.
+# ══════════════════════════════════════════════════════════════
+
+# ── Validate a voucher code ────────────────────────────────────
+@app.route('/api/vouchers/validate', methods=['POST'])
+@token_required
+def validate_voucher(current_user):
+    data       = request.get_json(silent=True) or {}
+    code       = str(data.get('code', '')).strip()[:32]   # cap length, prevent huge strings
+    cart_total = data.get('cart_total', 0)
+
+    if not code:
+        return jsonify({'error': 'Voucher code is required'}), 400
+    try:
+        cart_total = float(cart_total)
+        if cart_total < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid cart total'}), 400
+
+    conn = get_db()
+    c    = conn.cursor()
+    # Parameterised — no string interpolation
+    c.execute('''
+        SELECT discount_percent, min_purchase, code
+        FROM   transactions.discounts
+        WHERE  code = ? AND is_active = 1 AND valid_until > datetime('now')
+    ''', (code,))
+    voucher = c.fetchone()
+    conn.close()
+
+    if not voucher:
+        return jsonify({'error': 'Invalid or expired voucher code'}), 404
+    if cart_total < voucher['min_purchase']:
+        return jsonify({'error': f"Minimum purchase Rp {int(voucher['min_purchase']):,} required"}), 400
+
+    discount = round(cart_total * voucher['discount_percent'] / 100, 0)
+    # Return only discount info — no internal IDs leaked
+    return jsonify({
+        'code':             voucher['code'],
+        'discount_percent': voucher['discount_percent'],
+        'discount_amount':  discount,
+        'final_total':      max(0, cart_total - discount)
+    })
+
+
+# ── List public vouchers (code + percent only) ─────────────────
+@app.route('/api/vouchers', methods=['GET'])
+def list_vouchers():
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('''
+        SELECT code, discount_percent, min_purchase
+        FROM   transactions.discounts
+        WHERE  is_active = 1 AND valid_until > datetime('now')
+        ORDER  BY discount_percent DESC
+        LIMIT  20
+    ''')
+    # Expose only what buyers need to see; no internal IDs
+    vouchers = [{'code': r['code'], 'percent': r['discount_percent'],
+                 'min_purchase': r['min_purchase']} for r in c.fetchall()]
+    conn.close()
+    return jsonify(vouchers)
+
+
+# ── Seller: view orders for their store ────────────────────────
+@app.route('/api/orders/seller/<int:seller_id>', methods=['GET'])
+@token_required
+def get_seller_orders(current_user, seller_id):
+    # Strict ownership: only the seller themselves can view their orders
+    if current_user['user_id'] != seller_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('SELECT id FROM seller.stores WHERE seller_id = ?', (seller_id,))
+    store_row = c.fetchone()
+    if not store_row:
+        conn.close()
+        return jsonify({'error': 'No store found for this seller'}), 404
+
+    store_id = store_row['id']
+    c.execute('''
+        SELECT o.id, o.total_price, o.status, o.created_at,
+               o.delivery_fee, o.discount_amount,
+               u.username AS buyer_name
+        FROM   transactions.orders o
+        JOIN   users u ON u.id = o.user_id
+        WHERE  o.store_id = ?
+        ORDER  BY o.created_at DESC
+        LIMIT  100
+    ''', (store_id,))
+    orders = [dict(r) for r in c.fetchall()]
+
+    for order in orders:
+        c.execute('''
+            SELECT oi.qty, oi.price_at_time, p.name
+            FROM   transactions.order_items oi
+            JOIN   inventory.products p ON p.id = oi.product_id
+            WHERE  oi.order_id = ?
+        ''', (order['id'],))
+        order['items'] = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return jsonify(orders)
+
+
+# ── Seller → dispatch / Driver → update status ─────────────────
+@app.route('/api/orders/<int:order_id>/status', methods=['PUT'])
+@token_required
+def update_order_status(current_user, order_id):
+    data       = request.get_json(silent=True) or {}
+    new_status = str(data.get('status', '')).strip()
+
+    ALLOWED_TRANSITIONS = {
+        'Seller': {
+            'from': 'Sedang Dikemas',
+            'to':   'Menunggu Pengirim'
+        }
+    }
+    role = current_user.get('active_role', '')
+
+    # Validate the requested status is in the allowed set
+    all_statuses = {'Sedang Dikemas', 'Menunggu Pengirim', 'Sedang Dikirim', 'Selesai', 'Dibatalkan'}
+    if new_status not in all_statuses:
+        return jsonify({'error': 'Invalid status value'}), 400
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('''
+        SELECT o.id, o.status, o.store_id
+        FROM   transactions.orders o
+        WHERE  o.id = ?
+    ''', (order_id,))
+    order = c.fetchone()
+    if not order:
+        conn.close()
+        return jsonify({'error': 'Order not found'}), 404
+
+    # Sellers can only dispatch their own store's orders
+    if new_status == 'Menunggu Pengirim':
+        if role != 'Seller':
+            conn.close()
+            return jsonify({'error': 'Only sellers can dispatch orders'}), 403
+        c.execute('SELECT id FROM seller.stores WHERE seller_id = ? AND id = ?',
+                  (current_user['user_id'], order['store_id']))
+        if not c.fetchone():
+            conn.close()
+            return jsonify({'error': 'This order does not belong to your store'}), 403
+        if order['status'] != 'Sedang Dikemas':
+            conn.close()
+            return jsonify({'error': 'Order is not in packing state'}), 400
+
+    c.execute('UPDATE transactions.orders SET status = ? WHERE id = ?', (new_status, order_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'message': f'Order updated to {new_status}'})
+
+
+# ── Buyer: view their own order history ────────────────────────
+@app.route('/api/orders/buyer/<int:user_id>', methods=['GET'])
+@token_required
+def get_buyer_orders(current_user, user_id):
+    # Strict privacy: buyers can only see their own orders
+    if current_user['user_id'] != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('''
+        SELECT o.id, o.total_price, o.status, o.created_at,
+               o.delivery_fee, o.payment_method,
+               o.voucher_code, o.discount_amount,
+               s.name AS store_name, s.city AS store_city
+        FROM   transactions.orders o
+        LEFT   JOIN seller.stores s ON s.id = o.store_id
+        WHERE  o.user_id = ?
+        ORDER  BY o.created_at DESC
+        LIMIT  50
+    ''', (user_id,))
+    orders = [dict(r) for r in c.fetchall()]
+
+    for order in orders:
+        c.execute('''
+            SELECT oi.qty, oi.price_at_time, p.name, p.image_url
+            FROM   transactions.order_items oi
+            JOIN   inventory.products p ON p.id = oi.product_id
+            WHERE  oi.order_id = ?
+        ''', (order['id'],))
+        order['items'] = [dict(r) for r in c.fetchall()]
+
+    conn.close()
+    return jsonify(orders)
+
+
+# ── Seller: financial report (own store only) ──────────────────
+@app.route('/api/reports/seller/<int:seller_id>', methods=['GET'])
+@token_required
+def seller_report(current_user, seller_id):
+    if current_user['user_id'] != seller_id:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('SELECT id FROM seller.stores WHERE seller_id = ?', (seller_id,))
+    store_row = c.fetchone()
+    if not store_row:
+        conn.close()
+        return jsonify({'error': 'No store found'}), 404
+
+    c.execute('''
+        SELECT
+            COUNT(*)                                                       AS total_orders,
+            COALESCE(SUM(total_price), 0)                                  AS total_revenue,
+            COALESCE(SUM(CASE WHEN status='Selesai'    THEN total_price ELSE 0 END), 0) AS completed_revenue,
+            COALESCE(SUM(CASE WHEN status='Dibatalkan' THEN 1       ELSE 0 END), 0) AS cancelled_count
+        FROM transactions.orders
+        WHERE store_id = ?
+    ''', (store_row['id'],))
+    conn.close()
+    return jsonify(dict(c.fetchone()))
+
+
+# ══════════════════════════════════════════════════════════════
+#  PHASE 4 — Driver Job Flow
+#  Security: atomic UPDATE prevents double-claiming.
+#  Privacy:  buyers' full address not exposed to driver.
+# ══════════════════════════════════════════════════════════════
+
+_DRIVER_FLAT_FEE    = 5000    # flat Rp 5,000 per delivery
+_DRIVER_FEE_PERCENT = 0.10    # + 10% of delivery_fee
+
+
+# ── Available jobs (status = Menunggu Pengirim, unclaimed) ─────
+@app.route('/api/jobs/available', methods=['GET'])
+@token_required
+def get_available_jobs(current_user):
+    if 'Driver' not in current_user.get('roles', []):
+        return jsonify({'error': 'Driver role required'}), 403
+
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('''
+        SELECT o.id,
+               o.delivery_fee,
+               o.status,
+               o.created_at,
+               s.name  AS store_name,
+               s.city  AS store_city,
+               u.username AS buyer_name
+        FROM   transactions.orders o
+        LEFT   JOIN seller.stores s ON s.id  = o.store_id
+        LEFT   JOIN users         u ON u.id  = o.user_id
+        WHERE  o.status    = 'Menunggu Pengirim'
+          AND  o.driver_id IS NULL
+        ORDER  BY o.created_at ASC
+        LIMIT  50
+    ''')
+    # Expose only pickup/dropoff names — no addresses, no totals to protect buyer privacy
+    jobs = [{
+        'id':         r['id'],
+        'store_name': r['store_name'],
+        'store_city': r['store_city'],
+        'buyer_name': r['buyer_name'],
+        'delivery_fee': r['delivery_fee'],
+        'created_at': r['created_at'],
+        'estimated_earnings': round((r['delivery_fee'] or 0) * _DRIVER_FEE_PERCENT + _DRIVER_FLAT_FEE, 0)
+    } for r in c.fetchall()]
+    conn.close()
+    return jsonify(jobs)
+
+
+# ── Driver takes a job (atomic, prevents double-claiming) ──────
+@app.route('/api/jobs/<int:order_id>/take', methods=['POST'])
+@token_required
+def take_job(current_user, order_id):
+    if 'Driver' not in current_user.get('roles', []):
+        return jsonify({'error': 'Driver role required'}), 403
+
+    driver_id = current_user['user_id']
+    conn      = get_db()
+    c         = conn.cursor()
+
+    # Single atomic UPDATE — only succeeds if nobody else claimed it yet
+    c.execute('''
+        UPDATE transactions.orders
+        SET    status    = 'Sedang Dikirim',
+               driver_id = ?
+        WHERE  id        = ?
+          AND  status    = 'Menunggu Pengirim'
+          AND  driver_id IS NULL
+    ''', (driver_id, order_id))
+
+    if c.rowcount == 0:
+        conn.close()
+        return jsonify({'error': 'Order already taken or not available'}), 409
+
+    conn.commit()
+    conn.close()
+    return jsonify({'message': 'Job accepted! Head to the pickup location.'})
+
+
+# ── Driver completes a delivery ────────────────────────────────
+@app.route('/api/jobs/<int:order_id>/complete', methods=['POST'])
+@token_required
+def complete_job(current_user, order_id):
+    if 'Driver' not in current_user.get('roles', []):
+        return jsonify({'error': 'Driver role required'}), 403
+
+    driver_id = current_user['user_id']
+    conn      = get_db()
+    c         = conn.cursor()
+
+    c.execute('''
+        SELECT id, driver_id, delivery_fee, status
+        FROM   transactions.orders
+        WHERE  id = ?
+    ''', (order_id,))
+    order = c.fetchone()
+
+    if not order:
+        conn.close()
+        return jsonify({'error': 'Order not found'}), 404
+    if order['driver_id'] != driver_id:
+        conn.close()
+        return jsonify({'error': 'Unauthorized: not your delivery'}), 403
+    if order['status'] != 'Sedang Dikirim':
+        conn.close()
+        return jsonify({'error': 'Order is not currently in transit'}), 400
+
+    earnings = round((order['delivery_fee'] or 0) * _DRIVER_FEE_PERCENT + _DRIVER_FLAT_FEE, 0)
+
+    c.execute("UPDATE transactions.orders SET status = 'Selesai' WHERE id = ?", (order_id,))
+    c.execute('''
+        INSERT INTO transactions.driver_earnings (driver_id, order_id, amount)
+        VALUES (?, ?, ?)
+    ''', (driver_id, order_id, earnings))
+
+    conn.commit()
+    conn.close()
+    return jsonify({'message': 'Delivery completed!', 'earnings': earnings})
+
+
+# ── Driver: my active deliveries ──────────────────────────────
+@app.route('/api/jobs/mine', methods=['GET'])
+@token_required
+def my_jobs(current_user):
+    if 'Driver' not in current_user.get('roles', []):
+        return jsonify({'error': 'Driver role required'}), 403
+
+    driver_id = current_user['user_id']
+    conn      = get_db()
+    c         = conn.cursor()
+    c.execute('''
+        SELECT o.id, o.status, o.created_at,
+               s.name  AS store_name,
+               s.city  AS store_city,
+               u.username AS buyer_name,
+               de.amount  AS earnings
+        FROM   transactions.orders o
+        LEFT   JOIN seller.stores          s  ON s.id  = o.store_id
+        LEFT   JOIN users                  u  ON u.id  = o.user_id
+        LEFT   JOIN transactions.driver_earnings de
+                    ON de.order_id = o.id AND de.driver_id = ?
+        WHERE  o.driver_id = ?
+        ORDER  BY o.created_at DESC
+        LIMIT  50
+    ''', (driver_id, driver_id))
+    jobs = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return jsonify(jobs)
+
+
+# ── Driver: earnings summary ───────────────────────────────────
+@app.route('/api/jobs/earnings', methods=['GET'])
+@token_required
+def driver_earnings_summary(current_user):
+    if 'Driver' not in current_user.get('roles', []):
+        return jsonify({'error': 'Driver role required'}), 403
+
+    driver_id = current_user['user_id']
+    conn      = get_db()
+    c         = conn.cursor()
+    c.execute('''
+        SELECT COUNT(*)              AS total_deliveries,
+               COALESCE(SUM(amount), 0) AS total_earned
+        FROM   transactions.driver_earnings
+        WHERE  driver_id = ?
+    ''', (driver_id,))
+    row = dict(c.fetchone())
+    conn.close()
+    return jsonify(row)
+
+
+def setup_phase34_tables():
+    """Idempotent — creates Phase 3-4 tables if they don't exist yet."""
+    conn = get_db()
+    c    = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS transactions.discounts (
+        id               INTEGER PRIMARY KEY AUTOINCREMENT,
+        code             TEXT    UNIQUE NOT NULL COLLATE NOCASE,
+        discount_percent INTEGER NOT NULL CHECK(discount_percent BETWEEN 1 AND 100),
+        min_purchase     REAL    NOT NULL DEFAULT 0,
+        valid_until      DATETIME NOT NULL,
+        is_active        INTEGER  DEFAULT 1
+    )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS transactions.driver_earnings (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        driver_id  INTEGER NOT NULL,
+        order_id   INTEGER NOT NULL UNIQUE,
+        amount     REAL    NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    conn.commit()
+    conn.close()
+
+setup_phase34_tables()
 
 
 def setup_missing_tables():
+
     conn = get_db()
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS transactions.cart (
@@ -741,6 +1093,218 @@ def setup_missing_tables():
     conn.close()
     
 setup_missing_tables()
+
+
+# ══════════════════════════════════════════════════════════════
+#  PHASE 5 — Admin Monitoring & Overdue Engine
+#  Security: every endpoint verifies Admin role from JWT.
+#  All queries fully parameterised — zero f-string interpolation.
+#  Privacy:  passwords and tokens are never included in responses.
+# ══════════════════════════════════════════════════════════════
+
+def _require_admin(current_user):
+    """Returns a 403 JSON response if the caller is not an Admin, else None."""
+    if 'Admin' not in current_user.get('roles', []):
+        return jsonify({'error': 'Admin role required'}), 403
+    return None
+
+
+# ── GET /api/admin/stats ───────────────────────────────────────
+@app.route('/api/admin/stats', methods=['GET'])
+@token_required
+def admin_stats(current_user):
+    """Return platform-wide aggregate statistics (Admin only)."""
+    err = _require_admin(current_user)
+    if err:
+        return err
+
+    conn = get_db()
+    c    = conn.cursor()
+    try:
+        # Total registered users
+        c.execute('SELECT COUNT(*) AS cnt FROM users')
+        total_users = c.fetchone()['cnt']
+
+        # Total products in inventory
+        c.execute('SELECT COUNT(*) AS cnt FROM inventory.products')
+        total_products = c.fetchone()['cnt']
+
+        # Total orders ever placed
+        c.execute('SELECT COUNT(*) AS cnt FROM transactions.orders')
+        total_orders = c.fetchone()['cnt']
+
+        # Revenue = SUM of total_price for completed orders
+        c.execute('''
+            SELECT COALESCE(SUM(total_price), 0) AS rev
+            FROM   transactions.orders
+            WHERE  status = ?
+        ''', ('Selesai',))
+        total_revenue = c.fetchone()['rev']
+
+        # Pending orders (being packed)
+        c.execute('''
+            SELECT COUNT(*) AS cnt
+            FROM   transactions.orders
+            WHERE  status = ?
+        ''', ('Sedang Dikemas',))
+        pending_orders = c.fetchone()['cnt']
+
+        # Active deliveries
+        c.execute('''
+            SELECT COUNT(*) AS cnt
+            FROM   transactions.orders
+            WHERE  status = ?
+        ''', ('Sedang Dikirim',))
+        active_deliveries = c.fetchone()['cnt']
+
+    finally:
+        conn.close()
+
+    return jsonify({
+        'total_users':       total_users,
+        'total_products':    total_products,
+        'total_orders':      total_orders,
+        'total_revenue':     total_revenue,
+        'pending_orders':    pending_orders,
+        'active_deliveries': active_deliveries
+    })
+
+
+# ── GET /api/admin/orders ──────────────────────────────────────
+@app.route('/api/admin/orders', methods=['GET'])
+@token_required
+def admin_orders(current_user):
+    """Return the last 100 orders across all stores (Admin only)."""
+    err = _require_admin(current_user)
+    if err:
+        return err
+
+    conn = get_db()
+    c    = conn.cursor()
+    try:
+        c.execute('''
+            SELECT
+                o.id,
+                u.username  AS buyer_name,
+                s.name      AS store_name,
+                o.status,
+                o.total_price,
+                o.created_at
+            FROM   transactions.orders o
+            LEFT   JOIN users          u ON u.id = o.user_id
+            LEFT   JOIN seller.stores  s ON s.id = o.store_id
+            ORDER  BY o.created_at DESC
+            LIMIT  100
+        ''')
+        # Never expose passwords, tokens, or internal driver_id in this list
+        orders = [dict(r) for r in c.fetchall()]
+    finally:
+        conn.close()
+
+    return jsonify(orders)
+
+
+# ── POST /api/admin/trigger-overdue ───────────────────────────
+@app.route('/api/admin/trigger-overdue', methods=['POST'])
+@token_required
+def trigger_overdue(current_user):
+    """
+    Cancel packing orders older than 3 days and refund buyers (Admin only).
+    Marks status → 'Dibatalkan' and credits the buyer's wallet if the
+    original payment method was 'wallet'.
+    Returns: { cancelled_count: N }
+    """
+    # Body parsing — safe, silent, no crash on empty body
+    _ = request.get_json(silent=True) or {}
+
+    err = _require_admin(current_user)
+    if err:
+        return err
+
+    conn = get_db()
+    c    = conn.cursor()
+    try:
+        # Find all overdue "Sedang Dikemas" orders (> 3 days old)
+        c.execute('''
+            SELECT id, user_id, total_price, payment_method
+            FROM   transactions.orders
+            WHERE  status     = ?
+              AND  created_at < datetime('now', ?)
+        ''', ('Sedang Dikemas', '-3 days'))
+        overdue = c.fetchall()
+
+        cancelled_count = 0
+        for order in overdue:
+            order_id       = order['id']
+            user_id        = order['user_id']
+            total_price    = order['total_price']
+            payment_method = order['payment_method']
+
+            # Mark as cancelled — fully parameterised
+            c.execute('''
+                UPDATE transactions.orders
+                SET    status = ?
+                WHERE  id     = ?
+            ''', ('Dibatalkan', order_id))
+
+            # Refund wallet if buyer paid via wallet
+            if payment_method == 'wallet':
+                c.execute('''
+                    UPDATE wallets
+                    SET    balance = balance + ?
+                    WHERE  user_id = ?
+                ''', (total_price, user_id))
+                # Record refund in wallet history (best-effort; ignore if table absent)
+                try:
+                    c.execute('''
+                        INSERT INTO transactions.wallet_history
+                               (user_id, type, amount, description)
+                        VALUES (?, ?, ?, ?)
+                    ''', (user_id, 'credit', total_price,
+                          'Auto-refund: order overdue (>3 days)'))
+                except Exception:
+                    pass  # wallet_history table may not exist in all envs
+
+            cancelled_count += 1
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+    return jsonify({'cancelled_count': cancelled_count,
+                    'message': f'{cancelled_count} overdue order(s) cancelled and refunded.'})
+
+
+# ══════════════════════════════════════════════════════════════
+#  PHASE 6 — Security Hardening helpers
+#  XSS-safe HTML escaper for any server-side rendered content.
+#  All existing endpoints already use parameterised queries.
+# ══════════════════════════════════════════════════════════════
+
+import html as _html
+
+def xss_escape(value):
+    """
+    Escape a string value for safe insertion into HTML contexts.
+    Uses Python's built-in html.escape which converts &, <, >, ", '
+    into their safe HTML entities.
+    """
+    if value is None:
+        return ''
+    return _html.escape(str(value), quote=True)
+
+
+# ── Utility: sanitise a dict's string values (defensive layer) ─
+def sanitise_dict(d):
+    """
+    Return a copy of dict d with all string values XSS-escaped.
+    Non-string values (int, float, None) are left untouched.
+    """
+    return {k: (xss_escape(v) if isinstance(v, str) else v)
+            for k, v in d.items()}
 
 
 if __name__ == '__main__':

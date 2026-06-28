@@ -33,6 +33,9 @@
 
         <!-- Main Content -->
         <div style="background: white; border-radius: 16px; padding: 32px; box-shadow: var(--box-shadow);">
+            <!-- Earnings Summary -->
+            <div id="driver-earnings-total" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;"></div>
+
             <div class="flex justify-between align-center mb-4">
                 <h2>Orders Ready for Pickup</h2>
                 <button class="btn btn-outline" onclick="loadDriverOrders()">Refresh</button>
@@ -40,7 +43,7 @@
 
             <div id="driver-orders-list" style="display: flex; flex-direction: column; gap: 16px;">
                 <!-- Orders injected here -->
-                <p class="text-muted text-center" style="padding: 40px;">No available orders right now.</p>
+                <p class="text-muted text-center" style="padding: 40px;">Loading...</p>
             </div>
         </div>
     </div>
