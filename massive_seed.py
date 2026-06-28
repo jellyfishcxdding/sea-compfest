@@ -166,8 +166,15 @@ c = conn.cursor()
 c.execute("DELETE FROM products")
 c.execute("DELETE FROM sqlite_sequence WHERE name='products'")
 
+# Delete old stores so we can have perfectly clean semantic stores, but since foreign keys might exist in other tables, let's just add our new ones
+store_id_map = {}
+for cat, s_list in stores.items():
+    store_id_map[cat] = []
+    for s_name in s_list:
+        c.execute("INSERT INTO stores (name, location) VALUES (?, ?)", (s_name, 'Jakarta'))
+        store_id_map[cat].append(c.lastrowid)
+
 prefixes = ['Premium', 'Classic', 'Modern', 'Essential', 'Ultra', 'Pro', 'High-Quality']
-locations = ['Jakarta Pusat', 'Jakarta Selatan', 'Bandung', 'Surabaya', 'Yogyakarta', 'Medan', 'Bali', 'Semarang']
 
 for category, items_dict in catalog.items():
     for item_name, (min_price, max_price) in items_dict.items():
@@ -178,8 +185,7 @@ for category, items_dict in catalog.items():
             stock = random.randint(10, 100)
             
             # Select store specific to category
-            store = random.choice(stores[category])
-            location = random.choice(locations)
+            store_id = random.choice(store_id_map[category])
             
             # Get guaranteed image
             img_options = images.get(item_name, [])
@@ -193,9 +199,9 @@ for category, items_dict in catalog.items():
                     img_url = f"https://images.unsplash.com/{img_val}?w=800&q=80"
                     
             c.execute('''
-                INSERT INTO products (name, category, price, stock, image_url, store_name, location)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (name, category, price, stock, img_url, store, location))
+                INSERT INTO products (name, category, price, stock, image_url, store_id)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (name, category, price, stock, img_url, store_id))
 
 conn.commit()
 conn.close()
