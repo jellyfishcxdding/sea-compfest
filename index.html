@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/index.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/motion.css">
 </head>
 <body>
     <!-- Top Navbar -->
@@ -58,21 +59,21 @@
     
     <main class="container">
         <!-- Promo Banner -->
-        <div class="promo-banner slide-fwd-hover">
+        <div class="promo-banner slide-fwd-hover fade-up">
             <div>
-                <h2>Super Green Sale!</h2>
-                <p>Up to 50% discount on all eco-friendly products.</p>
-                <button class="btn btn-primary mt-3" style="background: white; color: var(--primary-color);">Shop Now</button>
+                <h2 class="fade-up fade-up-d1">🌊 Super Green Sale!</h2>
+                <p class="fade-up fade-up-d2">Up to 50% off — discover the best deals across all categories.</p>
+                <button class="btn btn-primary mt-3 fade-up fade-up-d3" onclick="window.location.href='searchproduct.html'" style="background: white; color: var(--primary-color);">Shop Now →</button>
             </div>
         </div>
 
         <!-- Products -->
-        <div class="mb-4">
+        <div class="mb-4 scroll-animate">
             <div class="flex justify-between align-center mb-2">
                 <h2 class="section-title">For You</h2>
-                <a href="#" style="font-weight: 600; font-size: 14px;">See All</a>
+                <a href="searchproduct.html" style="font-weight: 600; font-size: 14px;">See All →</a>
             </div>
-            <div class="product-grid" id="product-list">
+            <div class="product-grid scroll-stagger" id="product-list">
                 <!-- Product Cards Injected Here -->
             </div>
         </div>
@@ -340,5 +341,6 @@
     </script>
     <script defer data-chunk="runtime" src="js/style.js" crossorigin="anonymous"></script>
     <script defer data-chunk="main" src="js/index.js" crossorigin="anonymous"></script>
+    <script src="js/motion.js"></script>
 </body>
 </html>

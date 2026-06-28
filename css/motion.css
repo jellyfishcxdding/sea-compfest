@@ -1,0 +1,321 @@
+/* ============================================================
+   SEAPEDIA – Life & Motion Layer (purely additive, no overrides)
+   ============================================================ */
+
+/* ── Google Font upgrade ── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── Page-entry fade-in ── */
+@keyframes seap-page-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+body {
+  animation: seap-page-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Skeleton loader ── */
+@keyframes seap-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 600px 100%;
+  animation: seap-shimmer 1.4s infinite linear;
+  border-radius: 8px;
+}
+.skeleton-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--box-shadow);
+}
+.skeleton-img  { height: 200px; }
+.skeleton-text { height: 14px; margin: 14px 16px 6px; width: 70%; }
+.skeleton-text.short { width: 40%; margin-top: 0; }
+.skeleton-text.price { height: 20px; width: 55%; margin-top: 8px; }
+
+/* ── Ripple on every .btn ── */
+.btn { overflow: hidden; position: relative; }
+.btn .ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: rgba(255,255,255,0.35);
+  animation: seap-ripple 0.55s linear;
+  pointer-events: none;
+}
+@keyframes seap-ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+
+/* ── Product card: image zoom on hover ── */
+.product-card .product-image {
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.45s ease;
+  will-change: transform;
+}
+.product-card:hover .product-image {
+  transform: scale(1.06);
+  filter: brightness(1.04);
+}
+
+/* ── Product card: floating badge for "New" items ── */
+.product-card .badge-new {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: linear-gradient(135deg, #00aa5b, #007a41);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(0,170,91,0.4);
+  animation: seap-badge-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes seap-badge-pop {
+  from { transform: scale(0) rotate(-10deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0);     opacity: 1; }
+}
+
+/* ── Cart icon pulse when item added ── */
+@keyframes seap-cart-pulse {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+.cart-icon.pulse { animation: seap-cart-pulse 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* ── Cart badge bounce ── */
+@keyframes seap-badge-bounce {
+  0%,100% { transform: translateY(0); }
+  40%     { transform: translateY(-5px); }
+  70%     { transform: translateY(-2px); }
+}
+.cart-badge { animation: seap-badge-bounce 0.5s ease 0.1s both; }
+
+/* ── Upgraded Toast (slides in from bottom-right) ── */
+#toast-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+#toast-container > div {
+  pointer-events: auto;
+  min-width: 220px;
+  max-width: 340px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: seap-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes seap-toast-in {
+  from { opacity: 0; transform: translateX(60px) scale(0.92); }
+  to   { opacity: 1; transform: translateX(0)    scale(1); }
+}
+@keyframes seap-toast-out {
+  to { opacity: 0; transform: translateX(60px) scale(0.92); }
+}
+
+/* ── Scroll-reveal (replaces old scroll-animate) ── */
+.scroll-animate {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.scroll-animate.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children inside a reveal container */
+.scroll-stagger > *:nth-child(1) { transition-delay: 0.05s; }
+.scroll-stagger > *:nth-child(2) { transition-delay: 0.10s; }
+.scroll-stagger > *:nth-child(3) { transition-delay: 0.15s; }
+.scroll-stagger > *:nth-child(4) { transition-delay: 0.20s; }
+.scroll-stagger > *:nth-child(5) { transition-delay: 0.25s; }
+.scroll-stagger > *:nth-child(6) { transition-delay: 0.30s; }
+.scroll-stagger > *:nth-child(7) { transition-delay: 0.35s; }
+.scroll-stagger > *:nth-child(8) { transition-delay: 0.40s; }
+
+/* ── Promo banner: animated shimmer overlay ── */
+@keyframes seap-promo-shine {
+  0%   { left: -100%; }
+  50%  { left: 100%; }
+  100% { left: 100%; }
+}
+.promo-banner {
+  position: relative;
+  overflow: hidden;
+}
+.promo-banner::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.12), transparent);
+  animation: seap-promo-shine 3.5s ease infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ── Navbar: logo shimmer on hover ── */
+@keyframes seap-logo-shine {
+  0%   { background-position: -200px; }
+  100% { background-position: 400px; }
+}
+.navbar-brand:hover {
+  background: linear-gradient(90deg, var(--primary-color) 30%, #a8f0c6 50%, var(--primary-color) 70%);
+  background-size: 400px;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: seap-logo-shine 1.2s linear infinite;
+}
+
+/* ── Category pill: active indicator ── */
+.category-list li a.active {
+  background: var(--primary-color);
+  color: white !important;
+  font-weight: 700;
+}
+
+/* ── Input focus: gentle glow ── */
+.form-control:focus,
+.search-bar:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(0, 170, 91, 0.18);
+}
+
+/* ── Page-section fade-up (used on hero, categories, product sections) ── */
+@keyframes seap-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up       { animation: seap-fade-up 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+.fade-up-d1    { animation-delay: 0.08s; }
+.fade-up-d2    { animation-delay: 0.16s; }
+.fade-up-d3    { animation-delay: 0.24s; }
+.fade-up-d4    { animation-delay: 0.32s; }
+
+/* ── Product grid: stagger card entrance ── */
+@keyframes seap-card-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.product-card {
+  animation: seap-card-in 0.4s cubic-bezier(0.22,1,0.36,1) both;
+}
+/* delay based on DOM order (1-12) — JS will set --card-idx */
+.product-card { animation-delay: calc(var(--card-idx, 0) * 0.06s); }
+
+/* ── Floating cart button (mobile) ── */
+#floating-cart {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 6px 20px rgba(0,170,91,0.45);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 800;
+  border: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+#floating-cart:hover { transform: scale(1.08); box-shadow: 0 10px 28px rgba(0,170,91,0.55); }
+#floating-cart-badge {
+  position: absolute;
+  top: 4px; right: 4px;
+  background: #ef144a;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 9px;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+}
+@media (max-width: 768px) {
+  #floating-cart { display: flex; }
+}
+
+/* ── Stat cards (used in dashboard/admin) ── */
+.stat-card {
+  background: white;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: var(--box-shadow);
+  transition: var(--transition);
+  border-left: 4px solid var(--primary-color);
+}
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--box-shadow-hover);
+}
+.stat-card .stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin: 8px 0 4px;
+}
+.stat-card .stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ── Status badge colors ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.status-badge::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.8;
+}
+.status-pending    { background: #fff8e1; color: #f59e0b; }
+.status-packed     { background: #e3f2fd; color: #1976d2; }
+.status-shipped    { background: #fff3e0; color: #f97316; }
+.status-delivered  { background: #e8f5e9; color: #00aa5b; }
+.status-cancelled  { background: #fce4ec; color: #d32f2f; }
+
+/* ── Number counter animation (for stat values) ── */
+@keyframes seap-count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stat-value { animation: seap-count-up 0.5s ease both; }
