@@ -10,6 +10,17 @@ app = Flask(__name__)
 CORS(app)
 app.config['SECRET_KEY'] = 'seapedia-super-secret-key'
 
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    # Strict Transport Security prevents downgrade attacks
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    # Content Security Policy (Basic API restriction)
+    response.headers['Content-Security-Policy'] = "default-src 'self'; frame-ancestors 'none';"
+    return response
+
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
@@ -241,9 +252,12 @@ def checkout(current_user):
     data = request.json
     user_id = data.get('user_id')
     if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized checkout'}), 403
+    
     cart = data.get('cart', [])
     payment_method = data.get('payment_method')
-    delivery_fee = data.get('delivery_fee', 10000)
+    
+    # Hacking Prevention: Hardcode delivery fee so it can't be spoofed negatively by client
+    delivery_fee = 10000
 
     if not user_id or not cart:
         return jsonify({'error': 'Invalid checkout data'}), 400
@@ -254,6 +268,10 @@ def checkout(current_user):
     try:
         stores_map = {}
         for item in cart:
+            qty = int(item.get('qty', 1))
+            if qty <= 0:
+                raise ValueError("Quantity must be positive")
+            
             store_id = item.get('store_id')
             if store_id not in stores_map:
                 stores_map[store_id] = []
@@ -263,7 +281,10 @@ def checkout(current_user):
         orders_to_create = []
 
         for store_id, items in stores_map.items():
-            store_total = sum(item.get('price', 0) * item.get('qty', 1) for item in items)
+            store_total = sum(float(item.get('price', 0)) * int(item.get('qty', 1)) for item in items)
+            if store_total <= 0:
+                raise ValueError("Invalid store total")
+                
             order_total = store_total + delivery_fee
             total_payment += order_total
             orders_to_create.append({
@@ -391,6 +412,85 @@ def update_order_status(order_id):
     conn.commit()
     conn.close()
     return jsonify({'message': 'Status updated'})
+
+@app.route('/api/wishlist/<int:user_id>', methods=['GET'])
+@token_required
+def get_wishlist(current_user, user_id):
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT p.* FROM inventory.wishlist w
+        JOIN inventory.products p ON w.product_id = p.id
+        WHERE w.user_id = ?
+    ''', (user_id,))
+    items = [dict(row) for row in c.fetchall()]
+    return jsonify(items)
+
+@app.route('/api/wishlist', methods=['POST'])
+@token_required
+def add_to_wishlist(current_user):
+    data = request.json
+    user_id = data.get('user_id')
+    product_id = data.get('product_id')
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
+    
+    conn = get_db()
+    c = conn.cursor()
+    try:
+        c.execute('INSERT INTO inventory.wishlist (user_id, product_id) VALUES (?, ?)', (user_id, product_id))
+        conn.commit()
+        return jsonify({'message': 'Added to wishlist'}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Item already in wishlist'}), 400
+
+@app.route('/api/wishlist/<int:user_id>/<int:product_id>', methods=['DELETE'])
+@token_required
+def remove_wishlist(current_user, user_id, product_id):
+    if current_user['user_id'] != user_id: return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('DELETE FROM inventory.wishlist WHERE user_id = ? AND product_id = ?', (user_id, product_id))
+    conn.commit()
+    return jsonify({'message': 'Removed from wishlist'})
+
+@app.route('/api/products/<int:product_id>/reviews', methods=['GET'])
+def get_reviews(product_id):
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT username, rating, comment, created_at FROM inventory.product_reviews WHERE product_id = ? ORDER BY created_at DESC', (product_id,))
+    reviews = [dict(row) for row in c.fetchall()]
+    return jsonify(reviews)
+
+@app.route('/api/products/<int:product_id>/reviews', methods=['POST'])
+@token_required
+def add_review(current_user, product_id):
+    data = request.json
+    user_id = current_user['user_id']
+    username = current_user['username']
+    rating = int(data.get('rating', 5))
+    comment = data.get('comment', '')
+
+    conn = get_db()
+    c = conn.cursor()
+    
+    # Check if user bought it
+    c.execute('''
+        SELECT 1 FROM transactions.order_items oi
+        JOIN transactions.orders o ON oi.order_id = o.id
+        WHERE o.buyer_id = ? AND oi.product_id = ? AND o.status = 'Selesai'
+        LIMIT 1
+    ''', (user_id, product_id))
+    
+    if not c.fetchone():
+        return jsonify({'error': 'You must purchase and complete delivery to review this item'}), 403
+        
+    c.execute('''
+        INSERT INTO inventory.product_reviews (product_id, user_id, username, rating, comment)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (product_id, user_id, username, rating, comment))
+    conn.commit()
+    return jsonify({'message': 'Review added successfully'}), 201
 
 if __name__ == '__main__':
     print("Amazon-Class SEAPEDIA Backend running on http://127.0.0.1:5000")
