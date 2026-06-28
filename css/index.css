@@ -22,4 +22,4 @@
     box-shadow: var(--box-shadow-hover);
     color: var(--primary-color);
 }
-.category-bubble svg { color: var(--primary-color); margin-bottom: 8px; }\n
+.category-bubble svg { color: var(--primary-color); margin-bottom: 8px; }

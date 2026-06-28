@@ -474,3 +474,45 @@ a:focus-visible {
   animation: slide-fwd-center 0.4s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
   z-index: 10;
 }
+
+/* === RESPONSIVE DESIGN (MOBILE) === */
+@media (max-width: 768px) {
+    div[style*="display: grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+    }
+    .nav-container {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start !important;
+    }
+    .search-bar {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    .nav-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .category-nav ul {
+        padding-bottom: 12px;
+    }
+    .promo-banner h2 {
+        font-size: 28px !important;
+    }
+    .promo-banner p {
+        font-size: 16px !important;
+    }
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+        gap: 12px !important;
+    }
+    .flex.justify-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 12px;
+    }
+    .container {
+        padding: 0 16px;
+    }
+}

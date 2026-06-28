@@ -47,4 +47,4 @@
     .sidebar-menu { display: flex; overflow-x: auto; padding: 8px; }
     .sidebar-item { border-left: none !important; border-bottom: 4px solid transparent; }
     .sidebar-item.active { border-bottom: 4px solid var(--primary-color); }
-}\n
+}
