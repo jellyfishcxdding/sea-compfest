@@ -181,18 +181,30 @@ def get_products():
         base_query += ' AND p.store_id = ?'
         params.append(store_id)
         
-    if q:
+    if 'q' in request.args:
+        q = request.args.get('q').lower()
         base_query += ' AND LOWER(p.name) LIKE ?'
         params.append(f'%{q}%')
-        
-    if category:
-        # Since we don't have a category column in dummy data, we just fake it by matching the name
+
+    if 'category' in request.args:
+        category = request.args.get('category').lower()
         base_query += ' AND LOWER(p.name) LIKE ?'
         params.append(f'%{category}%')
         
-    base_query += ' ORDER BY RANDOM() LIMIT ?'
+    sort_by = request.args.get('sort', 'default')
+    if sort_by == 'price_asc':
+        base_query += ' ORDER BY p.price ASC'
+    elif sort_by == 'price_desc':
+        base_query += ' ORDER BY p.price DESC'
+    elif sort_by == 'rating_desc':
+        # we don't have product ratings easily available, sort by id for now or store rating
+        base_query += ' ORDER BY s.rating DESC'
+    else:
+        base_query += ' ORDER BY p.id DESC'
+
+    base_query += ' LIMIT ?'
     params.append(limit)
-    
+
     c.execute(base_query, params)
     products = [dict(row) for row in c.fetchall()]
     conn.close()
