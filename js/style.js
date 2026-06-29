@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:5000/api';
+const API_URL = 'https://3e10e7d76cb047.lhr.life/api';
 
 function showToast(message, isError = false) {
     const container = document.getElementById('toast-container');
