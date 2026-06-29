@@ -265,7 +265,14 @@ async function selectActiveRole(role) {
     if (res.ok) {
         localStorage.setItem('seapedia_token', data.token);
         localStorage.setItem('seapedia_active_role', data.active_role);
-        window.location.href = 'dashboard.html';
+        // Route to the correct dashboard based on active role
+        const dashboards = {
+            'Admin':  'admin.html',
+            'Seller': 'sellerPage.html',
+            'Driver': 'driverPage.html',
+            'Buyer':  'dashboard.html',
+        };
+        window.location.href = dashboards[data.active_role] || 'dashboard.html';
     } else {
         showToast('Error', true);
     }
@@ -285,12 +292,15 @@ function updateNavForAuth() {
     const currentUser = JSON.parse(localStorage.getItem('seapedia_user'));
     
     if (currentUser) {
+        const activeRole = localStorage.getItem('seapedia_active_role') || 'Buyer';
+        const dashboards = { 'Admin': 'admin.html', 'Seller': 'sellerPage.html', 'Driver': 'driverPage.html', 'Buyer': 'dashboard.html' };
+        const dashHref = dashboards[activeRole] || 'dashboard.html';
         navLinks.innerHTML = `
             <div class="cart-icon" data-href="cart.html">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                 ${cartCount > 0 ? `<span class="cart-badge">${cartCount}</span>` : ''}
             </div>
-            <button class="btn btn-outline" data-href="dashboard.html">Dashboard</button>
+            <button class="btn btn-outline" data-href="${dashHref}">Dashboard</button>
         `;
     } else {
         navLinks.innerHTML = `
