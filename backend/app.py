@@ -5,6 +5,7 @@ import sqlite3
 import bcrypt
 import jwt
 import datetime
+import html as _html   # Phase 6: XSS escaping for all user-controlled text
 
 app = Flask(__name__)
 CORS(app)
@@ -38,15 +39,36 @@ def get_db():
     c.execute(f"ATTACH DATABASE '{TRANSACTIONS_DB}' AS transactions")
     return conn
 
+# ── Phase 6: safe string helper ──────────────────────────────────────────────
+# Escapes HTML special chars in any user-supplied string before it leaves the
+# API. Keeps None as-is so SQL NULLs propagate correctly.
+def _safe(value, max_len=500):
+    """Escape HTML entities and trim length on user-controlled text."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    if max_len:
+        text = text[:max_len]
+    return _html.escape(text, quote=True)
+
+
 @app.route('/api/auth/register', methods=['POST'])
 def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    roles = data.get('roles', [])
+    data = request.get_json(silent=True) or {}
+    username = _safe(data.get('username'), max_len=50)
+    password = str(data.get('password', '')).strip()
+    roles    = data.get('roles', [])
 
-    if not username or not password or not roles:
-        return jsonify({'error': 'Missing required fields'}), 400
+    if not username or len(username) < 3:
+        return jsonify({'error': 'Username must be 3-50 characters'}), 400
+    if not password or len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    if not roles or not isinstance(roles, list):
+        return jsonify({'error': 'At least one role is required'}), 400
+    # Only allow known roles
+    VALID_ROLES = {'Buyer', 'Seller', 'Driver', 'Admin'}
+    if not all(r in VALID_ROLES for r in roles):
+        return jsonify({'error': 'Invalid role specified'}), 400
 
     hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
@@ -403,11 +425,17 @@ def get_reviews(product_id):
 @app.route('/api/products/<int:product_id>/reviews', methods=['POST'])
 @token_required
 def add_review(current_user, product_id):
-    data = request.json
-    user_id = current_user['user_id']
-    username = current_user['username']
-    rating = int(data.get('rating', 5))
-    comment = data.get('comment', '')
+    data     = request.get_json(silent=True) or {}
+    user_id  = current_user['user_id']
+    username = _safe(current_user['username'], max_len=50)
+    rating   = int(data.get('rating', 5))
+    comment  = _safe(data.get('comment', ''), max_len=1000)
+
+    # Validate rating range
+    if rating not in range(1, 6):
+        return jsonify({'error': 'Rating must be between 1 and 5'}), 400
+    if not comment:
+        return jsonify({'error': 'Review comment cannot be empty'}), 400
 
     conn = get_db()
     c = conn.cursor()
@@ -421,13 +449,15 @@ def add_review(current_user, product_id):
     ''', (user_id, product_id))
     
     if not c.fetchone():
+        conn.close()
         return jsonify({'error': 'You must purchase and complete delivery to review this item'}), 403
-        
+
     c.execute('''
         INSERT INTO inventory.product_reviews (product_id, user_id, username, rating, comment)
         VALUES (?, ?, ?, ?, ?)
     ''', (product_id, user_id, username, rating, comment))
     conn.commit()
+    conn.close()
     return jsonify({'message': 'Review added successfully'}), 201
 
 
@@ -498,18 +528,25 @@ def update_store(current_user, store_id):
 def create_product(current_user):
     if current_user.get('active_role') != 'Seller':
         return jsonify({'error': 'Unauthorized'}), 403
-        
-    data = request.json
-    name = data.get('name')
-    price = data.get('price')
-    stock = data.get('stock')
-    category = data.get('category', 'electronics')
-    image_url = data.get('image_url', '')
-    description = data.get('description', '')
-    
-    if not name or price is None or stock is None:
-        return jsonify({'error': 'Missing required product fields'}), 400
-        
+
+    data        = request.get_json(silent=True) or {}
+    name        = _safe(data.get('name'), max_len=200)
+    price       = data.get('price')
+    stock       = data.get('stock')
+    category    = _safe(data.get('category', 'electronics'), max_len=100)
+    image_url   = _safe(data.get('image_url', ''), max_len=500)
+    description = _safe(data.get('description', ''), max_len=2000)
+
+    if not name:
+        return jsonify({'error': 'Product name is required'}), 400
+    try:
+        price = float(price)
+        stock = int(stock)
+        if price < 0 or stock < 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Price and stock must be valid non-negative numbers'}), 400
+
     conn = get_db()
     c = conn.cursor()
     c.execute('SELECT id FROM seller.stores WHERE seller_id = ?', (current_user['user_id'],))

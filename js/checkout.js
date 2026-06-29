@@ -69,23 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.updateCheckoutSummary = function() {
     const methodEl = document.getElementById('delivery-method');
     const method   = methodEl ? methodEl.value : 'Regular';
-    const fee      = DELIVERY_FEES[method] || 10000;
-
-    const subtotal = window._checkoutSubtotal || 0;
-    const discount = window._checkoutDiscount || 0;
-
-    const afterDiscount = Math.max(0, subtotal - discount);
-    const ppn           = Math.round(afterDiscount * 0.12);
-    const total         = afterDiscount + ppn + fee;
-
-    const el = (id) => document.getElementById(id);
-    if (el('checkout-subtotal')) el('checkout-subtotal').innerText = `Rp ${subtotal.toLocaleString()}`;
-    if (el('checkout-discount')) el('checkout-discount').innerText = discount > 0 ? `-Rp ${discount.toLocaleString()}` : '-';
-    if (el('checkout-delivery')) el('checkout-delivery').innerText = `Rp ${fee.toLocaleString()}`;
-    if (el('checkout-ppn'))      el('checkout-ppn').innerText      = `Rp ${ppn.toLocaleString()}`;
-    if (el('checkout-total'))    el('checkout-total').innerText    = `Rp ${total.toLocaleString()}`;
-};
-
 window.applyVoucher = async function() {
     const input = document.getElementById('voucher-input');
     const code  = (input?.value || '').trim().toUpperCase();
@@ -103,12 +86,12 @@ window.applyVoucher = async function() {
         if (res.ok) {
             window._checkoutDiscount = data.discount_amount;
             window._checkoutVoucher  = data.code;
-            updateCheckoutSummary();
-            showToast(`✅ Voucher applied! You save Rp ${data.discount_amount.toLocaleString()}`);
+            window.updateCheckoutSummary();
+            showToast(`Voucher applied! You save Rp ${data.discount_amount.toLocaleString()}`);
         } else {
             window._checkoutDiscount = 0;
             window._checkoutVoucher  = '';
-            updateCheckoutSummary();
+            window.updateCheckoutSummary();
             showToast(data.error, true);
         }
     } catch(e) { showToast('Failed to validate voucher', true); }
@@ -120,43 +103,30 @@ window.processCheckout = async function() {
     const cart   = JSON.parse(localStorage.getItem('seapedia_cart')) || [];
     const method = document.getElementById('payment-method')?.value;
     const deliveryMethod = document.getElementById('delivery-method')?.value || 'Regular';
+    const DELIVERY_FEES  = { 'Regular': 10000, 'Next Day': 20000, 'Instant': 35000 };
     const deliveryFee    = DELIVERY_FEES[deliveryMethod] || 10000;
-
-    if (!user) { window.location.href = 'login.html'; return; }
-    if (cart.length === 0) { showToast('Your cart is empty', true); return; }
-
-    const subtotal   = window._checkoutSubtotal || 0;
-    const discount   = window._checkoutDiscount || 0;
-    const afterDisc  = Math.max(0, subtotal - discount);
-    const ppn        = Math.round(afterDisc * 0.12);
-    const totalFinal = afterDisc + ppn + deliveryFee;
+    if (cart.length === 0) return;
 
     try {
         const res  = await fetch(`${API_URL}/checkout`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body:    JSON.stringify({
-                user_id:          user.id,
-                cart:             cart,
-                payment_method:   method,
-                delivery_method:  deliveryMethod,
-                delivery_fee:     deliveryFee,
-                subtotal:         subtotal,
-                discount_amount:  discount,
-                ppn_amount:       ppn,
-                total_price:      totalFinal,
-                voucher_code:     window._checkoutVoucher || null,
+                user_id:         user.id,
+                cart:            cart,
+                payment_method:  method,
+                delivery_fee:    deliveryFee,
+                voucher_code:    window._checkoutVoucher  || null,
+                discount_amount: window._checkoutDiscount || 0
             })
         });
         const data = await res.json();
         if (res.ok) {
             localStorage.removeItem('seapedia_cart');
             if (window._syncFloatingCart) window._syncFloatingCart();
-            showCustomPopup(
-                'Pembayaran Berhasil! 🎉',
-                `Total dibayar: Rp ${totalFinal.toLocaleString()} (termasuk PPN 12%)`,
-                () => { window.location.href = 'myOrder.html'; }
-            );
+            showCustomPopup('Payment Successful! 🎉', `Total paid: Rp ${data.total_paid.toLocaleString()}`, () => {
+                window.location.href = 'myOrder.html';
+            });
         } else {
             showToast(data.error, true);
         }
