@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from pathlib import Path
 import sqlite3
 import bcrypt
 import jwt
 import datetime
-import os
 
 app = Flask(__name__)
 CORS(app)
@@ -15,19 +15,19 @@ def add_security_headers(response):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    # Strict Transport Security prevents downgrade attacks
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    # Content Security Policy (Basic API restriction)
     response.headers['Content-Security-Policy'] = "default-src 'self'; frame-ancestors 'none';"
     return response
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+# ── Database paths resolved from this file's location ──
+# Path(__file__).resolve().parent is the backend/ folder;
+# .parent again goes up to the seapedia/ root, then into data/.
+_DATA_DIR     = Path(__file__).resolve().parent.parent / 'data'
+AUTH_DB       = str(_DATA_DIR / 'auth.db')
+SELLER_DB     = str(_DATA_DIR / 'seller.db')
+INVENTORY_DB  = str(_DATA_DIR / 'inventory.db')
+TRANSACTIONS_DB = str(_DATA_DIR / 'transactions.db')
 
-AUTH_DB = os.path.join(DATA_DIR, 'auth.db')
-SELLER_DB = os.path.join(DATA_DIR, 'seller.db')
-INVENTORY_DB = os.path.join(DATA_DIR, 'inventory.db')
-TRANSACTIONS_DB = os.path.join(DATA_DIR, 'transactions.db')
 
 def get_db():
     conn = sqlite3.connect(AUTH_DB)
