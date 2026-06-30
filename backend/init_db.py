@@ -6,8 +6,8 @@ Called automatically by the startup script before gunicorn.
 from pathlib import Path
 import sqlite3
 
-DATA_DIR = Path(__file__).resolve().parent.parent / 'data'
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR = Path(__file__).resolve().parent / 'data'
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── auth.db ──────────────────────────────────────────────────────
 auth_db = str(DATA_DIR / 'auth.db')
