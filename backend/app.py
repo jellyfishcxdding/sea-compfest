@@ -6,10 +6,20 @@ import bcrypt
 import jwt
 import datetime
 import html as _html   # Phase 6: XSS escaping for all user-controlled text
+import os
 
 app = Flask(__name__)
-CORS(app)
-app.config['SECRET_KEY'] = 'seapedia-super-secret-key'
+
+# Allow GitHub Pages + localhost during development
+CORS(app, origins=[
+    'https://jellyfishcxdding.github.io',
+    'http://127.0.0.1:5000',
+    'http://localhost:5000',
+    'null'   # file:// opened locally
+])
+
+# Use environment variable on Render, fallback for local dev
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'seapedia-super-secret-key')
 
 @app.after_request
 def add_security_headers(response):
@@ -1345,6 +1355,8 @@ def sanitise_dict(d):
 
 
 if __name__ == '__main__':
-    print("Amazon-Class SEAPEDIA Backend running on http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    is_production = os.environ.get('RENDER', False)
+    print(f"SEAPEDIA Backend running on port {port}")
+    app.run(debug=not is_production, host='0.0.0.0', port=port)
 

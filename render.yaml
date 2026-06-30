@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: seapedia-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt && python init_db.py
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120
+    plan: free
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: RENDER
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.10.0"
