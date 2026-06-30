@@ -5,39 +5,162 @@ import sqlite3
 import bcrypt
 import jwt
 import datetime
-import html as _html   # Phase 6: XSS escaping for all user-controlled text
+import html as _html
 import os
 
 app = Flask(__name__)
 
-# Allow GitHub Pages + localhost during development
-CORS(app, origins=[
-    'https://jellyfishcxdding.github.io',
-    'http://127.0.0.1:5000',
-    'http://localhost:5000',
-    'null'   # file:// opened locally
-])
+# Single CORS setup — allow all origins (JWT protects sensitive endpoints)
+CORS(app, supports_credentials=True)
 
-# Use environment variable on Render, fallback for local dev
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'seapedia-super-secret-key')
 
 @app.after_request
-def add_security_headers(response):
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; frame-ancestors 'none';"
     return response
 
-# ── Database paths resolved from this file's location ──
-# Path(__file__).resolve().parent is the backend/ folder;
-# .parent again goes up to the seapedia/ root, then into data/.
-_DATA_DIR     = Path(__file__).resolve().parent.parent / 'data'
-AUTH_DB       = str(_DATA_DIR / 'auth.db')
-SELLER_DB     = str(_DATA_DIR / 'seller.db')
-INVENTORY_DB  = str(_DATA_DIR / 'inventory.db')
+@app.route('/', defaults={'path': ''}, methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+def handle_options(path):
+    return jsonify({}), 200
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok', 'message': 'SEAPEDIA backend is running'})
+
+@app.route('/')
+def index():
+    return jsonify({'status': 'ok', 'message': 'SEAPEDIA API — use /api/* endpoints'})
+
+# ── Database paths ─────────────────────────────────────────────
+# Store data/ inside the backend/ folder so it is always writable
+# on Render (rootDir=backend) and locally.
+_DATA_DIR       = Path(__file__).resolve().parent / 'data'
+AUTH_DB         = str(_DATA_DIR / 'auth.db')
+SELLER_DB       = str(_DATA_DIR / 'seller.db')
+INVENTORY_DB    = str(_DATA_DIR / 'inventory.db')
 TRANSACTIONS_DB = str(_DATA_DIR / 'transactions.db')
+
+# ── Auto-initialise databases if they don't exist ──────────────
+def _ensure_databases():
+    """Create all SQLite databases and tables if not present.
+    Safe to call on every startup — uses IF NOT EXISTS."""
+    _DATA_DIR.mkdir(parents=True, exist_ok=True)
+
+    with sqlite3.connect(AUTH_DB) as c:
+        c.executescript('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime(\'now\'))
+            );
+            CREATE TABLE IF NOT EXISTS user_roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                role TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS wallets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER UNIQUE NOT NULL REFERENCES users(id),
+                balance REAL DEFAULT 0
+            );
+        ''')
+
+    with sqlite3.connect(SELLER_DB) as c:
+        c.executescript('''
+            CREATE TABLE IF NOT EXISTS stores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seller_id INTEGER NOT NULL,
+                name TEXT UNIQUE NOT NULL,
+                city TEXT,
+                description TEXT,
+                image_url TEXT,
+                rating REAL DEFAULT 5.0
+            );
+        ''')
+
+    with sqlite3.connect(INVENTORY_DB) as c:
+        c.executescript('''
+            CREATE TABLE IF NOT EXISTS products (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                store_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                price REAL NOT NULL,
+                stock INTEGER DEFAULT 0,
+                image_url TEXT,
+                category TEXT DEFAULT \'electronics\',
+                rating REAL DEFAULT 5.0,
+                sold_count INTEGER DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS product_reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                username TEXT NOT NULL,
+                rating INTEGER NOT NULL,
+                comment TEXT,
+                created_at TEXT DEFAULT (datetime(\'now\'))
+            );
+            CREATE TABLE IF NOT EXISTS discounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT UNIQUE NOT NULL,
+                discount_percent REAL NOT NULL,
+                min_purchase REAL DEFAULT 0,
+                valid_until TEXT
+            );
+            CREATE TABLE IF NOT EXISTS promos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER,
+                discount REAL NOT NULL,
+                description TEXT,
+                valid_until TEXT
+            );
+        ''')
+
+    with sqlite3.connect(TRANSACTIONS_DB) as c:
+        c.executescript('''
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                buyer_id INTEGER NOT NULL,
+                store_id INTEGER NOT NULL,
+                status TEXT DEFAULT \'Sedang Dikemas\',
+                payment_method TEXT,
+                delivery_method TEXT DEFAULT \'Regular\',
+                delivery_fee REAL DEFAULT 10000,
+                discount_amount REAL DEFAULT 0,
+                subtotal REAL DEFAULT 0,
+                ppn_amount REAL DEFAULT 0,
+                total_price REAL NOT NULL,
+                voucher_code TEXT,
+                driver_id INTEGER,
+                created_at TEXT DEFAULT (datetime(\'now\'))
+            );
+            CREATE TABLE IF NOT EXISTS order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL REFERENCES orders(id),
+                product_id INTEGER NOT NULL,
+                quantity INTEGER NOT NULL,
+                price REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS wallet_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                type TEXT NOT NULL,
+                description TEXT,
+                created_at TEXT DEFAULT (datetime(\'now\'))
+            );
+        ''')
+
+# Run on import (works for both gunicorn and python app.py)
+_ensure_databases()
 
 
 def get_db():
